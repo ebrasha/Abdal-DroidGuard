@@ -93,27 +93,7 @@ rasp.debug.detection=true
 rasp.emulator.detection=true
 ```
 
-### 🎛️ Customization
-The software provides extensive customization options:
-- Adjust obfuscation levels
-- Select RASP protection types
-- Configure tamper detection sensitivity
-- Customize security messages
-
-## 📊 Results and Output
-
-### 📁 Generated Files
-- **Hardened APK**: Main file with all protections applied
-- **Hardening Report**: Text file containing operation details
-- **Protection Files**: Additional files for monitoring and control
-
-### 📈 Performance Statistics
-The software provides comprehensive statistics of performed operations:
-- Number of processed files
-- Time spent on each stage
-- Success rate percentage
-- Error details (if any)
-
+ 
  
 
 ## 📚 Technical Documentation
