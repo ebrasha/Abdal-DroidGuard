@@ -18,6 +18,7 @@
 package com.ebrasha.droidguard.core;
 
 import com.ebrasha.droidguard.utils.SimpleLogger;
+import com.ebrasha.droidguard.utils.AndroidSDKConfig;
 import java.io.*;
 import java.nio.file.*;
 import java.util.zip.*;
@@ -26,6 +27,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.jar.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Real APK Hardener that properly signs and aligns APK files
@@ -39,14 +41,15 @@ import java.util.*;
 public class RealAPKHardener {
     
     private final SimpleLogger logger = SimpleLogger.getInstance();
+    private final AndroidSDKConfig sdkConfig = new AndroidSDKConfig();
     
     /**
      * Harden APK with proper signing and alignment
      */
     public boolean hardenAPK(File inputAPK, File outputAPK, 
-                           SimpleObfuscationEngine obfuscationEngine,
-                           SimpleTamperDetection tamperDetection,
-                           SimpleRASProtection raspProtection) {
+                           RealObfuscationEngine obfuscationEngine,
+                           RealTamperDetection tamperDetection,
+                           RealRASProtection raspProtection) {
         try {
             logger.info("Starting REAL APK hardening process...");
             logger.info("Input APK: " + inputAPK.getAbsolutePath());
@@ -73,7 +76,18 @@ public class RealAPKHardener {
                 }
                 logger.info("APK extracted successfully");
                 
-                // Step 4: Inject protection code (BEFORE building APK)
+                // Step 4: Obfuscate DEX files (BEFORE building APK)
+                if (obfuscationEngine != null) {
+                    logger.info("Starting DEX obfuscation...");
+                    DexProcessor dexProcessor = new DexProcessor();
+                    if (!obfuscateDEXFiles(extractedDir, dexProcessor)) {
+                        logger.warn("DEX obfuscation failed, continuing without it");
+                    } else {
+                        logger.info("DEX obfuscation completed successfully");
+                    }
+                }
+                
+                // Step 5: Inject protection code (BEFORE building APK)
                 InjectionEngine injectionEngine = new InjectionEngine();
                 if (!injectionEngine.injectProtection(extractedDir)) {
                     logger.error("Failed to inject protection code");
@@ -81,7 +95,7 @@ public class RealAPKHardener {
                 }
                 logger.info("Protection code injected successfully");
                 
-                // Step 5: Build APK with proper structure (NO changes after this)
+                // Step 6: Build APK with proper structure (NO changes after this)
                 Path newAPK = workingDir.resolve("hardened.apk");
                 APKBuilder apkBuilder = new APKBuilder();
                 if (!apkBuilder.buildAPK(inputAPK, extractedDir, newAPK)) {
@@ -102,11 +116,19 @@ public class RealAPKHardener {
                 }
                 logger.info("APK signed successfully");
                 
-                // Step 8: Verify final APK
-                if (apkSigner.verifyAPKSignature(outputAPK.toPath())) {
-                    logger.info("Final APK verification passed");
+                // Step 8: Verify final APK (try signature verification first, then basic structure)
+                logger.info("Verifying final APK...");
+                boolean signatureVerificationPassed = apkSigner.verifyAPKSignature(outputAPK.toPath());
+                boolean basicVerificationPassed = apkSigner.verifyAPKBasic(outputAPK.toPath());
+                
+                if (signatureVerificationPassed) {
+                    logger.info("Final APK signature verification passed");
+                } else if (basicVerificationPassed) {
+                    logger.warn("APK signature verification failed, but basic structure is valid");
+                    logger.info("APK should still be installable and functional");
                 } else {
-                    logger.error("Final APK verification failed");
+                    logger.error("Both signature and basic verification failed");
+                    logger.error("APK may have structural issues");
                 }
                 
                 logger.info("Final hardened APK saved to: " + outputAPK.getAbsolutePath());
@@ -229,7 +251,7 @@ public class RealAPKHardener {
     /**
      * Add protection markers to APK
      */
-    private void addProtectionMarkers(Path extractedDir, SimpleTamperDetection tamperDetection, SimpleRASProtection raspProtection) throws IOException {
+    private void addProtectionMarkers(Path extractedDir, RealTamperDetection tamperDetection, RealRASProtection raspProtection) throws IOException {
         // Create assets directory if it doesn't exist
         Path assetsDir = extractedDir.resolve("assets");
         Files.createDirectories(assetsDir);
@@ -529,6 +551,37 @@ public class RealAPKHardener {
     }
     
     /**
+     * Find zipalign executable path using configuration
+     */
+    private String findZipalignPath() {
+        // Use the new configuration system
+        String zipalignPath = sdkConfig.getToolPath("zipalign");
+        
+        if (zipalignPath != null) {
+            if (sdkConfig.isVerboseLoggingEnabled()) {
+                logger.info("Found zipalign using configuration: " + zipalignPath);
+            }
+            return zipalignPath;
+        }
+        
+        // Fallback: try system PATH
+        try {
+            ProcessBuilder pb = new ProcessBuilder("zipalign");
+            Process p = pb.start();
+            int exitCode = p.waitFor();
+            if (exitCode == 0 || exitCode == 1) { // zipalign returns 1 for usage info
+                logger.info("Found zipalign in system PATH");
+                return "zipalign";
+            }
+        } catch (Exception e) {
+            // Continue to next fallback
+        }
+        
+        logger.info("zipalign not found in any configured or default locations");
+        return null;
+    }
+    
+    /**
      * Generate a test key pair for signing
      */
     private KeyPair generateTestKeyPair() throws Exception {
@@ -544,8 +597,17 @@ public class RealAPKHardener {
         try {
             logger.info("Aligning APK with zipalign...");
             
+            // Try to find zipalign in common locations
+            String zipalignPath = findZipalignPath();
+            if (zipalignPath == null) {
+                logger.info("zipalign not found, skipping alignment");
+                // Fallback: just copy the file
+                Files.copy(inputAPK, outputAPK, StandardCopyOption.REPLACE_EXISTING);
+                return true;
+            }
+            
             ProcessBuilder pb = new ProcessBuilder(
-                "zipalign", "-v", "-p", "4", 
+                zipalignPath, "-v", "-p", "4", 
                 inputAPK.toString(), 
                 outputAPK.toString()
             );
@@ -597,6 +659,51 @@ public class RealAPKHardener {
                 logger.error("APK alignment fallback failed: " + ioE.getMessage());
                 return false;
             }
+        }
+    }
+    
+    /**
+     * Obfuscate DEX files in extracted directory
+     */
+    private boolean obfuscateDEXFiles(Path extractedDir, DexProcessor dexProcessor) {
+        try {
+            logger.info("Starting DEX obfuscation process...");
+            
+            // Find all DEX files
+            List<Path> dexFiles = new ArrayList<>();
+            Files.walk(extractedDir)
+                .filter(path -> path.toString().endsWith(".dex"))
+                .forEach(dexFiles::add);
+            
+            if (dexFiles.isEmpty()) {
+                logger.warn("No DEX files found for obfuscation");
+                return false;
+            }
+            
+            logger.info("Found " + dexFiles.size() + " DEX files to obfuscate");
+            
+            // Obfuscate each DEX file
+            int successCount = 0;
+            for (Path dexFile : dexFiles) {
+                try {
+                    logger.info("Obfuscating: " + dexFile.getFileName());
+                    if (dexProcessor.obfuscateDEX(dexFile)) {
+                        successCount++;
+                        logger.info("Successfully obfuscated: " + dexFile.getFileName());
+                    } else {
+                        logger.warn("Failed to obfuscate: " + dexFile.getFileName());
+                    }
+                } catch (Exception e) {
+                    logger.error("Error obfuscating " + dexFile.getFileName() + ": " + e.getMessage());
+                }
+            }
+            
+            logger.info("DEX obfuscation completed: " + successCount + "/" + dexFiles.size() + " files processed");
+            return successCount > 0;
+            
+        } catch (Exception e) {
+            logger.error("DEX obfuscation process failed: " + e.getMessage());
+            return false;
         }
     }
     

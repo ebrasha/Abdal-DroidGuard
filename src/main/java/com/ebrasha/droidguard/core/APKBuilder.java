@@ -152,10 +152,14 @@ public class APKBuilder {
                         return;
                     }
                     
-                    // Only add if it's a modified file (like classes.dex)
-                    if (isModifiedFile(entryName)) {
-                        addFileAsStored(zos, path, entryName);
-                        addedEntries.add(entryName);
+                    // Add ALL files from extracted directory (not just modified ones)
+                    // This ensures UI files, resources, and assets are preserved
+                    addFileAsStored(zos, path, entryName);
+                    addedEntries.add(entryName);
+                    
+                    // Log important file types for debugging
+                    if (isImportantFile(entryName)) {
+                        logger.info("Added important file: " + entryName);
                     }
                     
                 } catch (Exception e) {
@@ -188,6 +192,20 @@ public class APKBuilder {
     private boolean isModifiedFile(String relativePath) {
         // Only classes.dex and other modified files
         return relativePath.startsWith("classes") && relativePath.endsWith(".dex");
+    }
+    
+    /**
+     * Check if file is important for APK functionality
+     */
+    private boolean isImportantFile(String relativePath) {
+        return relativePath.startsWith("res/") ||           // Resources
+               relativePath.startsWith("assets/") ||       // Assets
+               relativePath.startsWith("lib/") ||          // Native libraries
+               relativePath.startsWith("META-INF/") ||     // Metadata
+               relativePath.endsWith(".xml") ||            // XML files
+               relativePath.endsWith(".so") ||             // Native libraries
+               relativePath.endsWith(".arsc") ||           // Resources table
+               relativePath.equals("resources.arsc");      // Resources table
     }
     
     /**

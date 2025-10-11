@@ -38,13 +38,16 @@ public class RealRASProtection {
      */
     public boolean addRASProtection(Path extractedDir) {
         try {
-            logger.info("Adding real RASP protection...");
+            logger.info("Adding REAL RASP protection with emulator blocking...");
             
             // Create anti-debugging protection
             createAntiDebuggingProtection(extractedDir);
             
-            // Create emulator detection
-            createEmulatorDetection(extractedDir);
+            // Create ADVANCED emulator detection (blocks Bluestacks, etc.)
+            createAdvancedEmulatorDetection(extractedDir);
+            
+            // Create NATIVE RASP security (anti-hooking protection)
+            createNativeRASPSecurity(extractedDir);
             
             // Create root detection
             createRootDetection(extractedDir);
@@ -192,9 +195,9 @@ public class RealRASProtection {
     }
     
     /**
-     * Create emulator detection
+     * Create REAL emulator detection (blocks Bluestacks, etc.)
      */
-    private void createEmulatorDetection(Path extractedDir) throws Exception {
+    private void createRealEmulatorDetection(Path extractedDir) throws Exception {
         logger.info("Creating emulator detection...");
         
         Path assetsDir = extractedDir.resolve("assets");
@@ -204,6 +207,30 @@ public class RealRASProtection {
         Files.write(emulatorFile, emulatorCode.getBytes("UTF-8"));
         
         logger.info("Emulator detection created");
+    }
+    
+    /**
+     * Create advanced emulator detection that blocks Bluestacks
+     */
+    private void createAdvancedEmulatorDetection(Path extractedDir) throws Exception {
+        logger.info("Creating advanced emulator detection that blocks Bluestacks...");
+        
+        AdvancedEmulatorDetector detector = new AdvancedEmulatorDetector();
+        detector.createAdvancedEmulatorDetection(extractedDir);
+        
+        logger.info("Advanced emulator detection created successfully");
+    }
+    
+    /**
+     * Create native RASP security with anti-hooking protection
+     */
+    private void createNativeRASPSecurity(Path extractedDir) throws Exception {
+        logger.info("Creating native RASP security with anti-hooking protection...");
+        
+        NativeRASPSecurity nativeSecurity = new NativeRASPSecurity();
+        nativeSecurity.createNativeRASPSecurity(extractedDir);
+        
+        logger.info("Native RASP security created successfully");
     }
     
     /**
