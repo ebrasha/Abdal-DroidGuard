@@ -59,18 +59,15 @@ del build\manifest.txt
 echo [SUCCESS] JAR created: build\abdal-droidguard.jar
 echo [SUCCESS] Configuration file copied: build\android-sdk-config.properties
 echo.
-echo [INFO] You can now run:
-echo [INFO]   java -jar build\abdal-droidguard.jar --help
-echo [INFO]   .\harden-and-sign.bat your_app.apk --all
-echo.
-echo [INFO] Android SDK Configuration:
-echo [INFO]   - SDK Path: C:\Users\EbraSha\AppData\Local\Android\Sdk
-echo [INFO]   - Build Tools: 36.1.0, 34.0.0
-echo [INFO]   - Tools: apksigner, zipalign, aapt
-echo.
+echo [INFO] Press Enter to continue.....
+
 
 pause
 
 java -jar build\abdal-droidguard.jar your_app.apk --all --verbose
+
+REM ## Foe Exam:  java -jar build\abdal-droidguard.jar your_app.apk --obfuscate --tamper-detect --rasp --verbose
+
+echo [INFO] End of compilation.
 
 pause

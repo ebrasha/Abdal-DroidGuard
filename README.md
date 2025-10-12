@@ -56,12 +56,7 @@ This software was designed to solve the security challenges of Android applicati
 ```bash
 # Compile the software
 .\build-fix.bat
-
-# Run hardening with all features
-java -jar build\abdal-droidguard-simple.jar your_app.apk --all --verbose
-
-# Run hardening with selected features
-java -jar build\abdal-droidguard-simple.jar your_app.apk --obfuscate --tamper-detect --rasp
+ 
 ```
 
 ### 📝 Command Line Parameters
@@ -75,7 +70,23 @@ java -jar build\abdal-droidguard-simple.jar your_app.apk --obfuscate --tamper-de
 
 ## 🔧 Advanced Configuration
 
-### ⚙️ Configuration File
+### ⚙️ Configuration Files
+
+#### Android SDK Configuration (`android-sdk-config.properties`)
+This version uses the `android-sdk-config.properties` file for Android SDK path configuration:
+
+```properties
+# Android SDK Configuration
+android.sdk.path=C:\\Users\\EbraSha\\AppData\\Local\\Android\\Sdk
+android.build.tools.version=36.1.0
+android.build.tools.version.alternative=34.0.0
+android.apksigner.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\apksigner.bat
+android.zipalign.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\zipalign.exe
+android.aapt.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\aapt.exe
+android.verbose.logging.enabled=true
+```
+
+#### Application Settings (`application.properties`)
 You can modify software settings through the `application.properties` file:
 
 ```properties
@@ -92,9 +103,6 @@ rasp.enabled=true
 rasp.debug.detection=true
 rasp.emulator.detection=true
 ```
-
- 
- 
 
 ## 📚 Technical Documentation
 

@@ -58,12 +58,7 @@
 ```bash
 # کامپایل نرم‌افزار
 .\build-fix.bat
-
-# اجرای سخت‌سازی با تمام ویژگی‌ها
-java -jar build\abdal-droidguard-simple.jar your_app.apk --all --verbose
-
-# اجرای سخت‌سازی با ویژگی‌های انتخابی
-java -jar build\abdal-droidguard-simple.jar your_app.apk --obfuscate --tamper-detect --rasp
+ 
 ```
 
 ### 📝 پارامترهای خط فرمان
@@ -77,7 +72,23 @@ java -jar build\abdal-droidguard-simple.jar your_app.apk --obfuscate --tamper-de
 
 ## 🔧 تنظیمات پیشرفته
 
-### ⚙️ فایل تنظیمات
+### ⚙️ فایل‌های تنظیمات
+
+#### تنظیمات Android SDK (`android-sdk-config.properties`)
+این نسخه از فایل `android-sdk-config.properties` برای تنظیم مسیرهای Android SDK استفاده می‌کند:
+
+```properties
+# تنظیمات Android SDK
+android.sdk.path=C:\\Users\\EbraSha\\AppData\\Local\\Android\\Sdk
+android.build.tools.version=36.1.0
+android.build.tools.version.alternative=34.0.0
+android.apksigner.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\apksigner.bat
+android.zipalign.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\zipalign.exe
+android.aapt.path=${android.sdk.path}\\build-tools\\${android.build.tools.version}\\aapt.exe
+android.verbose.logging.enabled=true
+```
+
+#### تنظیمات اپلیکیشن (`application.properties`)
 می‌توانید تنظیمات نرم‌افزار را از طریق فایل `application.properties` تغییر دهید:
 
 ```properties
@@ -94,7 +105,6 @@ rasp.enabled=true
 rasp.debug.detection=true
 rasp.emulator.detection=true
 ```
-
  
 ## 📚 مستندات فنی
 
