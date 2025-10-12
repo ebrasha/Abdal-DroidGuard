@@ -1,4 +1,5 @@
 @echo off
+
 echo [INFO] Building Abdal DroidGuard with Manifest Fix
 echo [INFO] ===========================================
 
